@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Мои анализы</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#0a0612;--card:#140d22;--ink:#e9f7ff;--mute:#8f86b3;--line:#3a2468;--acc:#00f0ff;--pink:#ff2bd6;--yel:#fcee0a;--accsoft:#1d1240;--band:rgba(255,43,214,.16);--warn:#3a3005;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 'Chakra Petch',system-ui,sans-serif}
+body{background:repeating-linear-gradient(0deg,rgba(0,240,255,.035) 0 1px,transparent 1px 4px),radial-gradient(120% 60% at 100% 0,rgba(255,43,214,.18),transparent 60%),radial-gradient(100% 50% at 0 100%,rgba(0,240,255,.12),transparent 60%),var(--bg);background-attachment:fixed}
+.app{max-width:480px;margin:0 auto;padding:16px 16px 40px}
+h1{font-size:28px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.06em;text-shadow:2px 0 var(--pink),-2px 0 var(--acc)}
+.sub{color:var(--mute);font-size:14px;margin:0 0 16px}
+.btn{width:100%;border:0;border-radius:0;padding:14px;font:inherit;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--yel);color:#0a0612;cursor:pointer;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));box-shadow:0 0 18px rgba(252,238,10,.35)}
+.btn:hover{background:var(--acc)}
+.btn.ghost{background:var(--accsoft);color:var(--acc)}
+.btn:focus-visible,.row:focus-visible,input:focus-visible,.pt:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.list{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--pink);border-radius:0;margin-top:16px;overflow:hidden;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%)}
+.head,.row{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.2fr;gap:8px;padding:12px 14px;align-items:center}
+.head{font-size:12px;color:var(--acc);letter-spacing:.1em;border-bottom:1px solid var(--line)}
+.row:hover{background:var(--accsoft)}
+.row{border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.row:last-child{border-bottom:0}
+.name{font-weight:500}.name small{display:block;color:var(--mute);font-weight:400;font-size:12px}
+.old{color:var(--mute)}.new{font-weight:700;color:var(--acc);text-shadow:0 0 8px rgba(0,240,255,.6)}
+.d{font-size:13px}.d b{font-weight:700}
+.back{background:none;border:0;color:var(--pink);font:inherit;font-weight:700;letter-spacing:.06em;padding:8px 0;cursor:pointer}
+.drop{display:block;border:2px dashed var(--pink);border-radius:0;padding:28px 16px;text-align:center;color:var(--mute);cursor:pointer;background:var(--card)}
+.drop img{max-width:100%;max-height:220px;border-radius:0;border:1px solid var(--acc);display:block;margin:0 auto 10px}
+.note{font-size:13px;color:var(--mute);margin:10px 2px}
+.rev{display:grid;grid-template-columns:1.4fr 1fr .7fr;gap:8px;padding:10px 14px;align-items:center;border-bottom:1px solid var(--line)}
+.rev.low{background:var(--warn)}
+input[type=text],input[type=date]{width:100%;font:inherit;color:var(--acc);background:#07030f;border:1px solid var(--line);border-bottom:2px solid var(--acc);border-radius:0;padding:8px}
+.unit{font-size:13px;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:0;padding:14px;margin-top:12px}
+svg polyline{filter:drop-shadow(0 0 4px var(--acc))}
+svg circle{filter:drop-shadow(0 0 3px var(--pink))}
+svg{width:100%;height:auto;display:block}
+.tip{min-height:44px;margin-top:8px;font-size:15px}
+.pt{cursor:pointer}
+.empty{padding:24px;text-align:center;color:var(--mute)}
+.del{background:none;border:1px solid var(--pink);color:var(--pink);font:inherit;font-size:13px;padding:6px 10px;cursor:pointer;letter-spacing:.04em}
+.del.sure{background:var(--pink);color:#0a0612;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{font:inherit;font-size:13px;background:none;border:1px solid;padding:5px 10px;cursor:pointer}
+.chip.off{opacity:.35;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const DEFS=[
+{k:'hgb',n:'Гемоглобин',u:'г/л',r:[130,170]},
+{k:'glu',n:'Глюкоза',u:'ммоль/л',r:[3.9,5.9]},
+{k:'chol',n:'Холестерин',u:'ммоль/л',r:[0,5.2]},
+{k:'wbc',n:'Лейкоциты',u:'×10⁹/л',r:[4,9]},
+{k:'fer',n:'Ферритин',u:'мкг/л',r:[30,400]},
+{k:'tsh',n:'ТТГ',u:'мЕд/л',r:[0.4,4]},
+{k:'rbc',n:'Эритроциты',u:'×10¹²/л',r:[4,5.5]},
+{k:'plt',n:'Тромбоциты',u:'×10⁹/л',r:[150,400]},
+{k:'alt',n:'АЛТ',u:'Ед/л',r:[0,41]},
+{k:'ast',n:'АСТ',u:'Ед/л',r:[0,40]},
+{k:'crea',n:'Креатинин',u:'мкмоль/л',r:[62,106]}];
+const SEED=[
+{date:'2026-03-12',v:{hgb:140,glu:5.0,chol:4.8,wbc:6.1,fer:62,tsh:2.1}},
+{date:'2026-07-05',v:{hgb:136,glu:5.4,chol:5.1,wbc:6.8,fer:55,tsh:2.4}}];
+const KEY='lab-proto-v1';
+let data=load(),view='home',cur=null,draft=null,photo=null,delT=null,hid={};
+function load(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s)}catch(e){}return JSON.parse(JSON.stringify(SEED))}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+const $=s=>document.querySelector(s);
+const fmt=n=>String(+n.toFixed(2)).replace('.',',');
+const dt=s=>{const[a,b,c]=s.split('-');return c+'.'+b+'.'+a};
+const app=$('#app');
+
+function render(k){
+ if(view!=='home')delT=null;
+ if(view==='home')home();else if(view==='review')review();else if(view==='all')allv();else detail();
+ if(!k)window.scrollTo(0,0);
+}
+function home(){
+ const s=[...data].sort((a,b)=>a.date<b.date?-1:1);
+ const last=s[s.length-1],prev=s[s.length-2];
+ let h=`<h1>Мои анализы</h1><p class="sub">${s.length?`// последний скан: ${dt(last.date)}`:'Пока нет анализов'}</p>
+ <button class="btn" id="add">Добавить анализ по фото</button>${s.length>1?`<button class="btn ghost" id="all" style="margin-top:10px">Общий график</button>`:''}`;
+ if(!last){h+=`<div class="list"><div class="empty">Сфотографируйте бланк, и здесь появятся показатели.</div></div>`}
+ else{
+  h+=`<div class="list"><div class="head"><span>Показатель</span><span>Было</span><span>Стало</span><span>Изменение</span></div>`;
+  DEFS.forEach(d=>{
+   const n=last.v[d.k];if(n==null)return;
+   const o=prev?prev.v[d.k]:null;
+   let ch='<span class="d" style="color:var(--mute)">нет данных</span>';
+   if(o!=null){const df=n-o,p=o?df/o*100:0;
+    const ar=Math.abs(df)<1e-9?'→':df>0?'↑':'↓';
+    ch=`<span class="d"><b>${ar} ${df>0?'+':''}${fmt(df)}</b><br>${p>0?'+':''}${fmt(p)}%</span>`}
+   h+=`<button class="row" data-k="${d.k}"><span class="name">${d.n}<small>${d.u}</small></span><span class="old">${o!=null?fmt(o):'—'}</span><span class="new">${fmt(n)}</span>${ch}</button>`});
+  h+=`</div><p class="note">Нажмите на показатель, чтобы увидеть график. Приложение ничего не оценивает, только показывает динамику.</p><h1 style="font-size:20px;margin-top:24px">История</h1><div class="list">${[...s].reverse().map(a=>`<div class="rev" style="grid-template-columns:1fr auto"><span>${dt(a.date)}<small class="unit"> — ${Object.keys(a.v).length} показателей</small></span><button class="del${delT===a.date?' sure':''}" data-d="${a.date}">${delT===a.date?'Точно удалить?':'Удалить'}</button></div>`).join('')}</div>`}
+ app.innerHTML=h;
+ $('#add').onclick=()=>{photo=null;draft=null;view='review';render()};
+ const al=$('#all');if(al)al.onclick=()=>{view='all';render()};
+ document.querySelectorAll('.del').forEach(b=>b.onclick=()=>{if(delT===b.dataset.d){data=data.filter(a=>a.date!==b.dataset.d);delT=null;save()}else delT=b.dataset.d;render(1)});
+ document.querySelectorAll('.row').forEach(b=>b.onclick=()=>{cur=b.dataset.k;view='detail';render()});
+}
+/*P*/
+const SYN={hgb:['гемоглоб','hgb','hb','hemoglobin','haemoglobin'],glu:['глюкоз','glucose','glu'],chol:['холестер','cholesterol','chol'],wbc:['лейкоцит','wbc','leu'],fer:['феррит','ferritin'],tsh:['ттг','тиреотроп','tsh'],rbc:['эритроцит','rbc'],plt:['тромбоцит','plt'],alt:['алт','аланин','alt'],ast:['аст','аспартат','ast'],crea:['креатинин','creatinine']};
+const BAD=/средн|mch|mcv|rdw|mpv|pdw|гематокрит|формул|ширин|распределен/;
+const esc=s=>s.replace(/[.*+?^$()|[\]\\{}]/g,'\\$&');
+const RX={};DEFS.forEach(d=>{RX[d.k]=new RegExp('(^|[^a-zа-яё0-9])('+SYN[d.k].map(s=>esc(s)+(s.length<=4?'(?![a-zа-яё])':'')).join('|')+')','i')});
+function today(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')}
+function findDate(text){
+ const now=new Date(),re=/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/g;let key=null,best=null;
+ text.split(/\r?\n/).forEach(l=>{const kw=/взят|забор|получен|сдач|исслед|collect/i.test(l);let m;re.lastIndex=0;
+  while((m=re.exec(l))){const dd=+m[1],mm=+m[2],yy=+m[3];if(mm<1||mm>12||dd<1||dd>31||yy<2000||yy>now.getFullYear())continue;
+   const iso=yy+'-'+String(mm).padStart(2,'0')+'-'+String(dd).padStart(2,'0');if(iso>today())continue;
+   if(kw&&!key)key=iso;if(!best||iso>best)best=iso}});
+ return key||best}
+function parseText(text){
+ const v={},low=[];
+ text.split(/\r?\n/).forEach(raw=>{const line=raw.toLowerCase();if(BAD.test(line))return;
+  DEFS.forEach(d=>{if(v[d.k]!=null)return;const m=RX[d.k].exec(line);if(!m)return;
+   const n=/(\d+(?:[.,]\d+)?)/.exec(line.slice(m.index+m[0].length));if(!n)return;
+   v[d.k]=parseFloat(n[1].replace(',','.'))})});
+ DEFS.forEach(d=>{const x=v[d.k];if(x!=null&&(x<=0||x>d.r[1]*3||(d.r[0]>0&&x<d.r[0]*.3)))low.push(d.k)});
+ return{date:findDate(text)||today(),v,low,raw:text}}
+/*PE*/
+async function ocr(src,say){
+ if(!window.Tesseract)throw new Error('lib');
+ const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src});
+ const sc=Math.min(2,2200/Math.max(img.width,img.height));
+ const c=document.createElement('canvas');c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+ const x=c.getContext('2d');x.drawImage(img,0,0,c.width,c.height);
+ const id=x.getImageData(0,0,c.width,c.height),p=id.data,h=new Array(256).fill(0);
+ for(let i=0;i<p.length;i+=4){const g=Math.round(.299*p[i]+.587*p[i+1]+.114*p[i+2]);p[i]=g;h[g]++}
+ const tot=p.length/4;let a=0,lo=0,hi=255;
+ for(let i=0;i<256;i++){a+=h[i];if(a>tot*.02){lo=i;break}}
+ a=0;for(let i=255;i>=0;i--){a+=h[i];if(a>tot*.02){hi=i;break}}
+ const k=255/Math.max(1,hi-lo);
+ for(let i=0;i<p.length;i+=4){const g=Math.max(0,Math.min(255,(p[i]-lo)*k));p[i]=p[i+1]=p[i+2]=g}
+ x.putImageData(id,0,0);
+ const r=await Tesseract.recognize(c,'rus+eng',{logger:m=>{say(m.status==='recognizing text'?'Распознавание: '+Math.round(m.progress*100)+'%':'Загрузка модели, подождите…')}});
+ return r.data.text}
+function review(){
+ let h=`<button class="back" id="bk">← Назад</button><h1>Новый анализ</h1>`;
+ if(!draft){
+  h+=`<p class="sub">Сфотографируйте бланк ровно и при хорошем свете или выберите файл.</p>
+  <label class="drop" for="f">${photo?`<img src="${photo}" alt="Фото бланка">`:''}<span>${photo?'Выбрать другое фото':'Нажмите, чтобы сделать фото или выбрать файл'}</span></label>
+  <input id="f" type="file" accept="image/*" hidden>
+  <button class="btn" id="rec" style="margin-top:12px"${photo?'':' disabled'}>Распознать</button>
+  <button class="btn ghost" id="man" style="margin-top:10px">Ввести вручную</button>
+  <div class="tip" id="st"></div>
+  <p class="note">Текст читается прямо на телефоне. При первом запуске скачивается языковая модель (несколько МБ), поэтому нужен интернет. Фото и анализы никуда не отправляются.</p>`;
+ }else{
+  const cnt=DEFS.filter(d=>draft.v[d.k]!=null).length;
+  h+=`<p class="sub">${cnt?`Найдено показателей: ${cnt}. Проверьте значения и дату, пустые поля можно заполнить вручную.`:'Ничего не найдено. Введите значения вручную или сфотографируйте бланк ровнее.'}</p>
+  <div class="card" style="margin-top:0"><label class="unit" for="dd">Дата сдачи</label><input type="date" id="dd" value="${draft.date}"></div>
+  <div class="list">`;
+  DEFS.forEach(d=>{const lw=draft.low.includes(d.k);const val=draft.v[d.k];
+   h+=`<div class="rev ${lw?'low':''}"><span class="name">${d.n}${lw?'<small>Проверьте значение</small>':''}</span><input type="text" inputmode="decimal" data-k="${d.k}" value="${val!=null?fmt(val):''}" placeholder="—" aria-label="${d.n}"><span class="unit">${d.u}</span></div>`});
+  h+=`</div>${draft.raw?`<details class="note"><summary>Что прочитано с фото</summary><pre style="white-space:pre-wrap;font-size:12px">${draft.raw.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</pre></details>`:''}
+  <button class="btn" id="sv" style="margin-top:16px">Сохранить анализ</button>`;
+ }
+ app.innerHTML=h;
+ $('#bk').onclick=()=>{draft=null;view='home';render()};
+ const f=$('#f');
+ if(f)f.onchange=e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{photo=r.result;render()};r.readAsDataURL(file)};
+ const rc=$('#rec');
+ if(rc&&photo)rc.onclick=async()=>{rc.disabled=true;const st=$('#st');
+  try{draft=parseText(await ocr(photo,t=>{st.textContent=t}));render()}
+  catch(e){st.textContent='Не удалось прочитать фото. Проверьте интернет и попробуйте ещё раз или введите значения вручную.';rc.disabled=false}};
+ const mn=$('#man');if(mn)mn.onclick=()=>{draft={date:today(),v:{},low:[],raw:''};render()};
+ const sv=$('#sv');
+ if(sv)sv.onclick=()=>{
+  const v={};let bad=false;
+  document.querySelectorAll('.rev input').forEach(i=>{const t=i.value.trim();if(!t)return;const n=parseFloat(t.replace(',','.'));if(isNaN(n))bad=true;else v[i.dataset.k]=n});
+  if(bad){alert('Проверьте значения: нужны числа, например 5,4');return}
+  if(!Object.keys(v).length){alert('Заполните хотя бы один показатель');return}
+  data=data.filter(a=>a.date!==$('#dd').value);
+  data.push({date:$('#dd').value,v});save();draft=null;view='home';render()};
+}
+function allv(){
+ const s=[...data].sort((a,b)=>a.date<b.date?-1:1);
+ if(s.length<2){view='home';return home()}
+ const COL=['#00f0ff','#ff2bd6','#fcee0a','#39ff14','#ff7a1a','#a78bfa','#ffffff','#ff5470','#7cffcb','#c0ff3e','#4d9bff'];
+ const W=340,H=240,pl=42,pr=14,pt=14,pb=28;
+ const ser=DEFS.map((d,i)=>{const b=s.find(a=>a.v[d.k]!=null);return{d,c:COL[i],b:b?b.v[d.k]:null}}).filter(x=>x.b);
+ const pct=(x,a)=>a.v[x.d.k]==null?null:(a.v[x.d.k]-x.b)/x.b*100;
+ const vis=ser.filter(x=>!hid[x.d.k]);
+ const all=[0];vis.forEach(x=>s.forEach(a=>{const p=pct(x,a);if(p!=null)all.push(p)}));
+ let lo=Math.min(...all),hi=Math.max(...all);const pad=(hi-lo)*.15||5;lo-=pad;hi+=pad;
+ const t=x=>new Date(x).getTime(),t0=t(s[0].date),t1=t(s[s.length-1].date);
+ const X=a=>pl+(t(a)-t0)/(t1-t0)*(W-pl-pr);
+ const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+ let g=`<line x1="${pl}" x2="${W-pr}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--mute)" stroke-dasharray="4 4"/>`;
+ for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3;g+=`<text x="${pl-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--mute)">${fmt(v)}%</text>`}
+ s.forEach(a=>{g+=`<text x="${X(a.date)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--mute)">${dt(a.date).slice(0,5)}</text>`});
+ vis.forEach(x=>{const pts=s.map((a,i)=>({a,i,p:pct(x,a)})).filter(o=>o.p!=null);
+  g+=`<polyline fill="none" stroke="${x.c}" stroke-width="2.2" points="${pts.map(o=>X(o.a.date)+','+Y(o.p)).join(' ')}" style="filter:drop-shadow(0 0 3px ${x.c})"/>`;
+  pts.forEach(o=>{g+=`<circle class="pt" tabindex="0" data-i="${o.i}" cx="${X(o.a.date)}" cy="${Y(o.p)}" r="5" fill="var(--card)" stroke="${x.c}" stroke-width="2.5"/>`})});
+ app.innerHTML=`<button class="back" id="bk">← Назад</button><h1>Общий график</h1><p class="sub">Изменение каждого показателя в % относительно первого анализа. Единицы разные, поэтому сравниваются изменения, а не сами значения.</p>
+ <div class="card"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Общий график">${g}</svg><div class="tip" id="tip"></div></div>
+ <div class="chips">${ser.map(x=>`<button class="chip${hid[x.d.k]?' off':''}" data-k="${x.d.k}" style="border-color:${x.c};color:${x.c}">${x.d.n}</button>`).join('')}</div>`;
+ const tip=i=>{const a=s[i];$('#tip').innerHTML=`<b>${dt(a.date)}</b><br>`+(vis.map(x=>{const p=pct(x,a);return p==null?'':`<span style="color:${x.c}">${x.d.n}</span> ${fmt(a.v[x.d.k])} ${x.d.u} (${p>0?'+':''}${fmt(p)}%)`}).filter(Boolean).join('<br>')||'Выберите показатели ниже')};
+ tip(s.length-1);
+ document.querySelectorAll('.pt').forEach(c=>{c.onclick=()=>tip(+c.dataset.i);c.onkeydown=e=>{if(e.key==='Enter')tip(+c.dataset.i)}});
+ document.querySelectorAll('.chip').forEach(b=>b.onclick=()=>{hid[b.dataset.k]=!hid[b.dataset.k];render(1)});
+ $('#bk').onclick=()=>{view='home';render()};
+}
+function detail(){
+ const d=DEFS.find(x=>x.k===cur);
+ const s=[...data].filter(a=>a.v[d.k]!=null).sort((a,b)=>a.date<b.date?-1:1);
+ const W=340,H=200,pl=36,pr=14,pt=14,pb=28;
+ const vals=s.map(a=>a.v[d.k]);
+ let lo=Math.min(...vals,d.r[0]),hi=Math.max(...vals,d.r[1]);
+ const pad=(hi-lo)*.15||1;lo-=pad;hi+=pad;if(lo<0&&Math.min(...vals,d.r[0])>=0)lo=0;
+ const t=x=>new Date(x).getTime();
+ const t0=t(s[0].date),t1=t(s[s.length-1].date);
+ const X=a=>s.length===1||t1===t0?(pl+W-pr)/2:pl+(t(a)-t0)/(t1-t0)*(W-pl-pr);
+ const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
+ const by=Y(Math.min(d.r[1],hi)),bh=Y(Math.max(d.r[0],lo))-by;
+ let g=`<rect x="${pl}" y="${by}" width="${W-pl-pr}" height="${bh}" fill="var(--band)"/>`;
+ for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3;g+=`<text x="${pl-6}" y="${Y(v)+4}" text-anchor="end" font-size="10" fill="var(--mute)">${fmt(v)}</text>`}
+ g+=`<polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="${s.map(a=>X(a.date)+','+Y(a.v[d.k])).join(' ')}"/>`;
+ s.forEach((a,i)=>{g+=`<text x="${X(a.date)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--mute)">${dt(a.date).slice(0,5)}</text>
+ <circle class="pt" tabindex="0" data-i="${i}" cx="${X(a.date)}" cy="${Y(a.v[d.k])}" r="7" fill="var(--card)" stroke="var(--pink)" stroke-width="3"/>`});
+ const li=s.length-1;
+ app.innerHTML=`<button class="back" id="bk">← Назад</button><h1>${d.n}</h1><p class="sub">${d.u}. Серая полоса: референс из бланка ${fmt(d.r[0])}–${fmt(d.r[1])}</p>
+ <div class="card"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="График ${d.n}">${g}</svg><div class="tip" id="tip"></div></div>
+ <div class="list" style="margin-top:12px">${[...s].reverse().map((a,i,arr)=>{const p=arr[i+1];const df=p?a.v[d.k]-p.v[d.k]:null;return `<div class="rev" style="grid-template-columns:1fr 1fr 1fr"><span>${dt(a.date)}</span><b>${fmt(a.v[d.k])}</b><span class="unit">${df==null?'первый':(df>0?'↑ +':df<0?'↓ ':'→ ')+fmt(df)}</span></div>`}).join('')}</div>`;
+ const tip=(i)=>{const a=s[i],p=s[i-1];let x=`<b>${dt(a.date)}</b>: ${fmt(a.v[d.k])} ${d.u}`;
+  if(p){const df=a.v[d.k]-p.v[d.k];x+=`<br>Было ${fmt(p.v[d.k])}, стало ${fmt(a.v[d.k])} (${df>0?'+':''}${fmt(df)})`}
+  $('#tip').innerHTML=x};
+ tip(li);
+ document.querySelectorAll('.pt').forEach(c=>{c.onclick=()=>tip(+c.dataset.i);c.onkeydown=e=>{if(e.key==='Enter')tip(+c.dataset.i)}});
+ $('#bk').onclick=()=>{view='home';render()};
+}
+render();
+</script>
+</body>
+</html>
